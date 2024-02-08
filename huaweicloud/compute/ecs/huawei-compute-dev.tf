@@ -128,7 +128,7 @@ resource "huaweicloud_kps_keypair" "keypair" {
 }
 
 data "huaweicloud_images_image" "image" {
-  name_regex        = "^${var.image_name}"
+  name        = var.image_name
   most_recent = true
 }
 
