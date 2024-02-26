@@ -2,7 +2,7 @@ terraform {
   required_providers {
     huaweicloud = {
       source  = "huaweicloud/huaweicloud"
-      version = "~> 1.51.0"
+      version = "~> 1.61.0"
     }
   }
 }
@@ -14,5 +14,5 @@ provider "huaweicloud" {
 variable "region" {
   type        = string
   default     = "cn-southwest-2"
-  description = "The region to create the compute."
+  description = "The region to deploy the service instance."
 }
