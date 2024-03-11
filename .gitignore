@@ -1,2 +1,6 @@
 .idea
 .vscode
+.terraform
+.terraform.*
+variables.tfvars.json
+terraform.log
