@@ -152,15 +152,16 @@ resource "huaweicloud_kps_keypair" "keypair" {
 }
 
 data "huaweicloud_images_image" "image" {
-  name_regex        = "^${var.image_name}"
-  most_recent = true
+  name                  = var.image_name
+  most_recent           = true
+  enterprise_project_id = "0"
 }
 
 resource "huaweicloud_compute_instance" "ecs-tf" {
   availability_zone  = local.availability_zone
   name               = "ecs-tf-${random_id.new.hex}"
   flavor_id          = var.flavor_id
-  security_group_ids = [ local.secgroup_id ]
+  security_group_ids = [local.secgroup_id]
   image_id           = data.huaweicloud_images_image.image.id
   key_pair           = huaweicloud_kps_keypair.keypair.name
   admin_pass         = local.admin_passwd
@@ -175,7 +176,7 @@ resource "huaweicloud_evs_volume" "volume" {
   volume_type       = "SSD"
   size              = 40
   availability_zone = local.availability_zone
-  tags = {
+  tags              = {
     foo = "bar"
     key = "value"
   }

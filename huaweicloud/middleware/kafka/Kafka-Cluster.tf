@@ -152,8 +152,9 @@ resource "huaweicloud_kps_keypair" "keypair" {
 }
 
 data "huaweicloud_images_image" "image" {
-  name        = "Kafka-v3.3.2_Ubuntu-20.04"
-  most_recent = true
+  name                  = "Kafka-v3.3.2_Ubuntu-20.04"
+  most_recent           = true
+  enterprise_project_id = "0"
 }
 
 resource "huaweicloud_compute_instance" "zookeeper" {

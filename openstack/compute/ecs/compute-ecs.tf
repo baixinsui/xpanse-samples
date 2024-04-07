@@ -154,7 +154,7 @@ resource "openstack_compute_keypair_v2" "keypair" {
 }
 
 data "openstack_images_image_v2" "image" {
-  name_regex  = "^${var.image_name}"
+  name        = var.image_name
   most_recent = true
 }
 

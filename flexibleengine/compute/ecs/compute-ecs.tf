@@ -156,8 +156,9 @@ resource "flexibleengine_compute_keypair_v2" "keypair" {
 }
 
 data "flexibleengine_images_image" "image" {
-  name_regex        = "^${var.image_name}"
-  most_recent = true
+  name                  = var.image_name
+  most_recent           = true
+  enterprise_project_id = "0"
 }
 
 resource "flexibleengine_compute_instance_v2" "ecs-tf" {
