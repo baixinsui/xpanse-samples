@@ -5,12 +5,13 @@ variable "region" {
 
 variable "availability_zone" {
   type        = string
+  default     = ""
   description = "The availability zone to deploy the compute instance."
 }
 
 variable "flavor_id" {
   type        = string
-  default     = "s6.large.2"
+  default     = ""
   description = "The flavor_id of the compute instance."
 }
 

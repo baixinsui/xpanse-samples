@@ -1,15 +1,18 @@
 variable "region" {
   type        = string
+  default     = ""
   description = "The region to deploy the mysql service instance."
 }
 
 variable "primary_az" {
   type        = string
+  default     = ""
   description = "The primary availability zone to deploy the mysql service instance."
 }
 
 variable "secondary_az" {
   type        = string
+  default     = ""
   description = "The secondary availability zone to deploy the mysql service instance."
 }
 

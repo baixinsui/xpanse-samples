@@ -5,6 +5,7 @@ variable "region" {
 
 variable "availability_zone" {
   type        = string
+  default     = ""
   description = "The availability zone to deploy the Kafka cluster instance."
 }
 

@@ -1,10 +1,12 @@
 variable "region" {
   type        = string
+  default     = ""
   description = "The region to deploy the K8S cluster instance."
 }
 
 variable "availability_zone" {
   type        = string
+  default     = ""
   description = "The availability zone to deploy the K8S cluster instance."
 }
 
