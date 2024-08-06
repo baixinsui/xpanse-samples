@@ -151,10 +151,6 @@ resource "random_password" "password" {
   override_special = "#%@"
 }
 
-resource "flexibleengine_compute_keypair_v2" "keypair" {
-  name = "keypair-ecs-${random_id.new.hex}"
-}
-
 data "flexibleengine_images_image" "image" {
   name                  = var.image_name
   most_recent           = true
@@ -167,7 +163,6 @@ resource "flexibleengine_compute_instance_v2" "ecs-tf" {
   flavor_id          = var.flavor_id
   security_groups    = [ local.secgroup_name ]
   image_id           = data.flexibleengine_images_image.image.id
-  key_pair           = flexibleengine_compute_keypair_v2.keypair.name
   admin_pass         = local.admin_passwd
   network {
     uuid = local.subnet_id

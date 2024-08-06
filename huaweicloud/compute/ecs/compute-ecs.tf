@@ -147,11 +147,6 @@ resource "random_password" "password" {
   override_special = "#%@"
 }
 
-resource "huaweicloud_kps_keypair" "keypair" {
-  name     = "keypair-ecs-${random_id.new.hex}"
-  key_file = "keypair-ecs-${random_id.new.hex}.pem"
-}
-
 data "huaweicloud_images_image" "image" {
   name                  = var.image_name
   most_recent           = true
@@ -164,7 +159,6 @@ resource "huaweicloud_compute_instance" "ecs-tf" {
   flavor_id          = var.flavor_id
   security_group_ids = [local.secgroup_id]
   image_id           = data.huaweicloud_images_image.image.id
-  key_pair           = huaweicloud_kps_keypair.keypair.name
   admin_pass         = local.admin_passwd
   network {
     uuid = local.subnet_id
