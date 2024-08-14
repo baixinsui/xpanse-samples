@@ -48,7 +48,7 @@ terraform {
   required_providers {
     flexibleengine = {
       source  = "FlexibleEngineCloud/flexibleengine"
-      version = "~> 1.45.0"
+      version = "~> 1.46.0"
     }
   }
 }
@@ -59,53 +59,44 @@ provider "flexibleengine" {
 
 data "flexibleengine_availability_zones" "osc-az" {}
 
-data "flexibleengine_vpc_v1" "existing" {
-  name  = var.vpc_name
-  count = length(data.flexibleengine_vpc_v1.existing)
+data "flexibleengine_vpcs" "existing" {
+  name = var.vpc_name
 }
 
-data "flexibleengine_vpc_subnet_v1" "existing" {
-  name    = var.subnet_name
-  count = length(data.flexibleengine_vpc_subnet_v1.existing)
+resource "flexibleengine_vpc_v1" "new" {
+  count = length(data.flexibleengine_vpcs.existing.vpcs) == 0 ? 1 : 0
+  name  = "${var.vpc_name}-${random_id.new.hex}"
+  cidr  = "192.168.0.0/16"
 }
 
-data "flexibleengine_networking_secgroup_v2" "existing" {
-  name  = var.secgroup_name
-  count = length(data.flexibleengine_networking_secgroup_v2.existing)
+data "flexibleengine_vpc_subnets" "existing" {
+  name = var.subnet_name
+}
+
+resource "flexibleengine_vpc_subnet_v1" "new" {
+  count      = length(data.flexibleengine_vpc_subnets.existing.subnets) == 0 ? 1 : 0
+  vpc_id     = local.vpc_id
+  name       = "${var.subnet_name}-${random_id.new.hex}"
+  cidr       = "192.168.10.0/24"
+  gateway_ip = "192.168.10.1"
+  dns_list   = ["100.125.0.41", "100.125.12.161"]
+}
+
+resource "flexibleengine_networking_secgroup_v2" "new" {
+  name        = var.secgroup_name
+  description = "Compute security group"
 }
 
 locals {
   availability_zone = var.availability_zone == "" ? data.flexibleengine_availability_zones.osc-az.names[0] : var.availability_zone
   admin_passwd      = var.admin_passwd == "" ? random_password.password.result : var.admin_passwd
-  vpc_id            = length(data.flexibleengine_vpc_v1.existing) > 0 ? data.flexibleengine_vpc_v1.existing[0].id : flexibleengine_vpc_v1.new[0].id
-  subnet_id         = length(data.flexibleengine_vpc_subnet_v1.existing) > 0 ? data.flexibleengine_vpc_subnet_v1.existing[0].id : flexibleengine_vpc_subnet_v1.new[0].id
-  secgroup_id       = length(data.flexibleengine_networking_secgroup_v2.existing) > 0 ? data.flexibleengine_networking_secgroup_v2.existing[0].id : flexibleengine_networking_secgroup_v2.new[0].id
-  secgroup_name     = length(data.flexibleengine_networking_secgroup_v2.existing) > 0 ? data.flexibleengine_networking_secgroup_v2.existing[0].name : flexibleengine_networking_secgroup_v2.new[0].name
-}
-
-resource "flexibleengine_vpc_v1" "new" {
-  count = length(data.flexibleengine_vpc_v1.existing) == 0 ? 1 : 0
-  name  = "${var.vpc_name}-${random_id.new.hex}"
-  cidr  = "192.168.0.0/16"
-}
-
-resource "flexibleengine_vpc_subnet_v1" "new" {
-  count      = length(data.flexibleengine_vpc_subnet_v1.existing) == 0 ? 1 : 0
-  vpc_id     = local.vpc_id
-  name       = "${var.subnet_name}-${random_id.new.hex}"
-  cidr       = "192.168.10.0/24"
-  gateway_ip = "192.168.10.1"
-  dns_list   = ["100.125.0.41","100.125.12.161"]
-}
-
-resource "flexibleengine_networking_secgroup_v2" "new" {
-  count       = length(data.flexibleengine_networking_secgroup_v2.existing) == 0 ? 1 : 0
-  name        = "${var.secgroup_name}-${random_id.new.hex}"
-  description = "Compute security group"
+  vpc_id            = length(data.flexibleengine_vpcs.existing.vpcs) > 0 ? data.flexibleengine_vpcs.existing.vpcs[0].id : flexibleengine_vpc_v1.new[0].id
+  subnet_id         = length(data.flexibleengine_vpc_subnets.existing.subnets) > 0 ? data.flexibleengine_vpc_subnets.existing.subnets[0].id : flexibleengine_vpc_subnet_v1.new[0].id
+  secgroup_id       = flexibleengine_networking_secgroup_v2.new.id
+  secgroup_name     = flexibleengine_networking_secgroup_v2.new.name
 }
 
 resource "flexibleengine_networking_secgroup_rule_v2" "secgroup_rule_0" {
-  count             = length(data.flexibleengine_networking_secgroup_v2.existing) == 0 ? 1 : 0
   direction         = "ingress"
   ethertype         = "IPv4"
   protocol          = "tcp"
@@ -116,7 +107,6 @@ resource "flexibleengine_networking_secgroup_rule_v2" "secgroup_rule_0" {
 }
 
 resource "flexibleengine_networking_secgroup_rule_v2" "secgroup_rule_1" {
-  count             = length(data.flexibleengine_networking_secgroup_v2.existing) == 0 ? 1 : 0
   direction         = "ingress"
   ethertype         = "IPv4"
   protocol          = "tcp"
@@ -127,7 +117,6 @@ resource "flexibleengine_networking_secgroup_rule_v2" "secgroup_rule_1" {
 }
 
 resource "flexibleengine_networking_secgroup_rule_v2" "secgroup_rule_2" {
-  count             = length(data.flexibleengine_networking_secgroup_v2.existing) == 0 ? 1 : 0
   direction         = "ingress"
   ethertype         = "IPv4"
   protocol          = "tcp"
@@ -163,10 +152,16 @@ resource "flexibleengine_compute_instance_v2" "ecs-tf" {
   flavor_id          = var.flavor_id
   security_groups    = [ local.secgroup_name ]
   image_id           = data.flexibleengine_images_image.image.id
-  admin_pass         = local.admin_passwd
   network {
     uuid = local.subnet_id
   }
+  user_data = <<EOF
+      #!/bin/bash
+      sudo sed -i 's/^#*PermitRootLogin.*$/PermitRootLogin yes/' /etc/ssh/sshd_config
+      sudo sed -i 's/^#*PasswordAuthentication.*$/PasswordAuthentication yes/' /etc/ssh/sshd_config
+      sudo systemctl restart ssh
+      sudo echo "root:${local.admin_passwd}" | chpasswd
+  EOF
 }
 
 resource "flexibleengine_blockstorage_volume_v2" "volume" {
