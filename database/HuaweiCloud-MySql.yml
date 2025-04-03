@@ -155,7 +155,7 @@ flavors:
 serviceProviderContactDetails:
   emails: [ "test@test.com" ]
 serviceObjects:
-  - name: user # string
+  - type: user # type of the object
     objectIdentifier: # Mandatory information for an object.
       name: userName # Mandatory string.
       valueSchema: "" #optional
@@ -168,7 +168,7 @@ serviceObjects:
         objectHandlerScript:
           # Means should the object manage should run on each node of the specific component or just one.
           runOnlyOnce: true
-          changeHandler: primary-server
+          changeHandler: instance
           ansibleScriptConfig:
             # Name of the file in the script
             playbookName: "middleware/ansible/database/database-manage.yml"
@@ -197,25 +197,28 @@ serviceObjects:
             dataType: string
             description: password of the user to be created.
             example: test
-            valueSchema: null
+            valueSchema:
+              minLength: 8
+              maxLength: 16
+              pattern: ^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,16}$
             sensitiveScope: always # store encrypted in xpanse DB.
             isMandatory: true
-          - name: database
+          - name: databases
             dataType: array # add new value 'array' to type enum.
-            description: parameter used to create new user.
-            example: test
+            description: array of databases used to create new user.
+            example: "test,test1"
             valueSchema: null
-            sensitiveScope: always # store encrypted in xpanse DB.
+            sensitiveScope: none # store encrypted in xpanse DB.
             isMandatory: true
             linkedObjectType: database # Means another object of the name mentioned here. Must be validated with OCL register and update.
-      - objectActionType: delete
+      - objectActionType: update # Must be also passed as a configuration parameter to SERVICE_CHANGE_DETAILS table. Allowed values must be CREATE, DELETE, UPDATE - create new enum
         modificationImpact:
           isDataLost: false
           isServiceInterrupted: false
         objectHandlerScript:
-          # Means should the configuration update run on each node of the specific component or just one.
-          runOnlyOnce: false
-          changeHandler: primary-server
+          # Means should the object manage should run on each node of the specific component or just one.
+          runOnlyOnce: true
+          changeHandler: instance
           ansibleScriptConfig:
             # Name of the file in the script
             playbookName: "middleware/ansible/database/database-manage.yml"
@@ -240,29 +243,32 @@ serviceObjects:
             valueSchema: null
             sensitiveScope: none
             isMandatory: true
-          - name: database
-            dataType: array # add new value 'array' to type enum.
-            description: parameter used to create new user.
+          - name: password
+            dataType: string
+            description: password of the user to be updated.
             example: test
-            valueSchema: null
+            valueSchema:
+              minLength: 8
+              maxLength: 16
+              pattern: ^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,16}$
             sensitiveScope: always # store encrypted in xpanse DB.
             isMandatory: true
-            linkedObjectType: database # Means another object of that type
-  - name: database
-    objectIdentifier: # Mandatory information for an object.
-      name: database name # Mandatory string.
-      valueSchema: "" #optional
-    handlerType: ansible
-    objectsManage:
-      # Should be the name available in the deployer script
-      - objectActionType: create
+          - name: databases
+            dataType: array # add new value 'array' to type enum.
+            description: array of names of databases to create new user.
+            example: "test,test1"
+            valueSchema: null
+            sensitiveScope: none # store encrypted in xpanse DB.
+            isMandatory: true
+            linkedObjectType: database # Means another object of the name mentioned here. Must be validated with OCL register and update.
+      - objectActionType: delete
         modificationImpact:
           isDataLost: false
           isServiceInterrupted: false
         objectHandlerScript:
           # Means should the configuration update run on each node of the specific component or just one.
-          runOnlyOnce: false
-          changeHandler: primary-server
+          runOnlyOnce: true
+          changeHandler: instance
           ansibleScriptConfig:
             # Name of the file in the script
             playbookName: "middleware/ansible/database/database-manage.yml"
@@ -280,12 +286,105 @@ serviceObjects:
             # Defines if we need a full inventory request.
             ansibleInventoryRequired: false
         objectParameters:
-          - name: admin_password
+          - name: username
             dataType: string
-            description: parameter used to create new user.
+            description: username to be created.
             example: test
             valueSchema: null
+            sensitiveScope: none
+            isMandatory: true
+          - name: databases
+            dataType: array # add new value 'array' to type enum.
+            description: parameter used to create new user.
+            example: "test,test1"
+            valueSchema: null
             sensitiveScope: always # store encrypted in xpanse DB.
+            isMandatory: true
+            linkedObjectType: database # Means another object of that type
+  - type: database
+    objectIdentifier: # Mandatory information for an object.
+      name: database name # Mandatory string.
+      valueSchema: "" #optional
+    handlerType: ansible
+    objectsManage:
+      # Should be the name available in the deployer script
+      - objectActionType: create
+        modificationImpact:
+          isDataLost: false
+          isServiceInterrupted: false
+        objectHandlerScript:
+          # Means should the configuration update run on each node of the specific component or just one.
+          runOnlyOnce: true
+          changeHandler: instance
+          ansibleScriptConfig:
+            # Name of the file in the script
+            playbookName: "middleware/ansible/database/database-manage.yml"
+            # Path to activate virtualenv
+            virtualEnv: ""
+            # Version of the python
+            pythonVersion: "3.10"
+            isPrepareAnsibleEnvironment: true
+            repoUrl: https://github.com/eclipse-xpanse/xpanse-samples
+            branch: main
+            # Full path of the requirements file in GIT repo.
+            requirementsFile: "requirements.txt"
+            # Install roles and collections
+            galaxyFile: ""
+            # Defines if we need a full inventory request.
+            ansibleInventoryRequired: false
+        objectParameters:
+          - name: database_name
+            dataType: string
+            description: name of the database.
+            example: test
+            valueSchema:
+            sensitiveScope: none # store encrypted in xpanse DB.
+            isMandatory: true
+          - name: character_set
+            dataType: string
+            description: character set of the database.
+            example: utf8mb4
+            valueSchema: null
+            sensitiveScope: none # store encrypted in xpanse DB.
+            isMandatory: true
+      - objectActionType: update
+        modificationImpact:
+          isDataLost: false
+          isServiceInterrupted: false
+        objectHandlerScript:
+          # Means should the configuration update run on each node of the specific component or just one.
+          runOnlyOnce: true
+          changeHandler: instance
+          ansibleScriptConfig:
+            # Name of the file in the script
+            playbookName: "middleware/ansible/database/database-manage.yml"
+            # Path to activate virtualenv
+            virtualEnv: ""
+            # Version of the python
+            pythonVersion: "3.10"
+            isPrepareAnsibleEnvironment: true
+            repoUrl: https://github.com/eclipse-xpanse/xpanse-samples
+            branch: main
+            # Full path of the requirements file in GIT repo.
+            requirementsFile: "requirements.txt"
+            # Install roles and collections
+            galaxyFile: ""
+            # Defines if we need a full inventory request.
+            ansibleInventoryRequired: false
+        objectParameters:
+          - name: database_name
+            dataType: string
+            description: name of the database.
+            example: test
+            valueSchema:
+            sensitiveScope: none # store encrypted in xpanse DB.
+            isMandatory: true
+          - name: character_set
+            dataType: string
+            description: character set of the database.
+            example: utf8mb4
+            valueSchema: null
+            sensitiveScope: none # store encrypted in xpanse DB.
             isMandatory: true
       - objectActionType: delete
         modificationImpact:
@@ -293,8 +392,8 @@ serviceObjects:
           isServiceInterrupted: false
         objectHandlerScript:
           # Means should the configuration update run on each node of the specific component or just one.
-          runOnlyOnce: false
-          changeHandler: primary-server
+          runOnlyOnce: true
+          changeHandler: instance
           ansibleScriptConfig:
             # Name of the file in the script
             playbookName: "middleware/ansible/database/database-container-manage.yml"
@@ -314,8 +413,8 @@ serviceObjects:
         objectParameters:
           - name: database
             dataType: array # add new value 'array' to type enum.
-            description: name of the database to be deleted.
-            example: test
+            description: array of names of the databases to be deleted.
+            example:
             valueSchema: null
             sensitiveScope: always # store encrypted in xpanse DB.
             isMandatory: true
